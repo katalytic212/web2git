@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clonador Otimizado de Sites para GitHub</title>
+<title>Clonador de Sites com Proxy</title>
 <style>
 body { font-family: sans-serif; margin: 20px; }
 input, button { margin: 5px 0; width: 100%; padding: 8px; }
@@ -13,7 +13,7 @@ a { color: blue; cursor: pointer; text-decoration: underline; }
 </head>
 <body>
 
-<h2>Clonador Otimizado de Sites</h2>
+<h2>Clonador de Sites com Proxy</h2>
 
 <label>URL do site:</label>
 <input id="siteUrl" placeholder="https://example.com">
@@ -27,7 +27,7 @@ a { color: blue; cursor: pointer; text-decoration: underline; }
 <label>Branch (default: gh-pages)</label>
 <input id="branch" placeholder="gh-pages">
 
-<label>Profundidade de páginas internas (ex: 2)</label>
+<label>Profundidade de páginas internas (ex: 1)</label>
 <input id="depth" type="number" value="1">
 
 <button id="tutorialLink">Como gerar token</button>
@@ -63,25 +63,31 @@ document.getElementById("tutorialLink").onclick = (e) => {
 `);
 };
 
-// ---------------- FETCH COM CACHE ----------------
+// ---------------- FETCH COM PROXY ----------------
 const cache = {};
+const proxy = "https://api.allorigins.win/get?url=";
 
-async function fetchWithCache(url) {
+async function fetchWithProxy(url) {
   if (cache[url]) return cache[url];
-  const proxy = "https://api.allorigins.win/get?url=";
-  const res = await fetch(proxy + encodeURIComponent(url));
-  if (!res.ok) throw new Error("Falha no proxy");
-  const data = await res.json();
-  cache[url] = data.contents;
-  return data.contents;
+  try {
+    log(`🌐 Buscando via proxy: ${url}`);
+    const res = await fetch(proxy + encodeURIComponent(url));
+    if (!res.ok) throw new Error("Falha no proxy");
+    const data = await res.json();
+    cache[url] = data.contents;
+    return data.contents;
+  } catch (err) {
+    log(`❌ Falha ao buscar ${url}: ${err.message}`);
+    return "";
+  }
 }
 
-// ---------------- FETCH RECURSIVO OTIMIZADO ----------------
+// ---------------- FETCH RECURSIVO ----------------
 async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDomain = null) {
   if (depth > maxDepth || collected[url]) return collected;
   try {
     log(`📥 Baixando: ${url}`);
-    const html = await fetchWithCache(url);
+    const html = await fetchWithProxy(url);
     const path = new URL(url).pathname === "/" ? "index.html" : new URL(url).pathname.slice(1);
     collected[url] = { content: html, path: path || "index.html" };
 
@@ -99,15 +105,19 @@ async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDom
       if (!collected[abs]) {
         try {
           log(`📦 Baixando asset: ${abs}`);
-          const blobData = await fetchWithCache(abs);
-          collected[abs] = { content: btoa(unescape(encodeURIComponent(blobData))), path: new URL(abs).pathname.slice(1) || "asset", binary: false };
+          const assetContent = await fetchWithProxy(abs);
+          collected[abs] = {
+            content: btoa(unescape(encodeURIComponent(assetContent))),
+            path: new URL(abs).pathname.slice(1) || "asset",
+            binary: false
+          };
         } catch {
           log(`⚠️ Falha ao baixar asset: ${abs}`);
         }
       }
     }
 
-    // ----------------- SEGUIR LINKS INTERNOS -----------------
+    // ----------------- LINKS INTERNOS -----------------
     const links = [...doc.querySelectorAll("a[href]")];
     for (const link of links) {
       let href = link.getAttribute("href");
@@ -121,7 +131,6 @@ async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDom
   } catch (err) {
     log(`❌ Erro ao baixar ${url}: ${err.message}`);
   }
-
   return collected;
 }
 
@@ -175,7 +184,7 @@ document.getElementById("cloneBtn").onclick = async () => {
     return;
   }
 
-  log("🔍 Iniciando clonagem otimizada...");
+  log("🔍 Iniciando clonagem via proxy...");
   const files = await fetchSite(siteUrl, depth);
 
   log("📤 Enviando para o GitHub...");
