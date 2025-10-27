@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌐 Clonar Site → GitHub Pages</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 Clonar Site → GitHub Pages</h1>
+    <p>Clone sites estáticos e publique diretamente no GitHub Pages usando seu token pessoal.</p>
+
+    <label>URL do site a clonar:</label>
+    <input id="siteUrl" placeholder="https://exemplo.com">
+
+    <label>Repositório GitHub (ex: usuario/repositorio):</label>
+    <input id="repo" placeholder="usuario/repositorio">
+
+    <label>Token Fine-grained do GitHub:</label>
+    <input id="token" type="password" placeholder="ghp_...">
+
+    <small>
+      <a href="#" id="tutorialLink">Como gerar um token GitHub seguro?</a>
+    </small>
+
+    <label>Branch de publicação:</label>
+    <input id="branch" value="gh-pages">
+
+    <button id="cloneBtn">Clonar e Publicar</button>
+
+    <pre id="log"></pre>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
