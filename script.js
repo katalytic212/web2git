@@ -1,10 +1,14 @@
+// 📌 Elementos da interface
 const logBox = document.getElementById("log");
+
+// Função de log interativo
 function log(msg) {
   console.log(msg);
   logBox.textContent += msg + "\n";
   logBox.scrollTop = logBox.scrollHeight;
 }
 
+// Tutorial para gerar Fine-Grained Token
 document.getElementById("tutorialLink").onclick = (e) => {
   e.preventDefault();
   alert(`
@@ -18,13 +22,32 @@ document.getElementById("tutorialLink").onclick = (e) => {
     ✅ Contents → Read and Write
     ✅ Metadata → Read-only
 6️⃣ Clique em "Generate token"
-7️⃣ Copie o token (ele começa com "github_pat_...")
+7️⃣ Copie o token (começa com "github_pat_...")
 
 ⚠️ Guarde-o com segurança!
 `);
 };
 
-// Baixa página e recursos básicos (HTML, CSS, JS, IMG)
+// Função para baixar assets (imagens, áudios, css, js)
+async function fetchAsset(url, collected) {
+  if (collected[url]) return;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const basePath = new URL(url).pathname.slice(1) || "asset";
+      collected[url] = { content: reader.result.split(",")[1], path: basePath, binary: true };
+      log(`📦 Recurso: ${basePath}`);
+    };
+    reader.readAsDataURL(blob);
+  } catch (err) {
+    log(`⚠️ Falha ao baixar ${url}: ${err.message}`);
+  }
+}
+
+// Função principal para baixar HTML e assets
 async function fetchSite(url, depth = 0, maxDepth = 1, collected = {}) {
   if (depth > maxDepth || collected[url]) return collected;
   try {
@@ -39,8 +62,8 @@ async function fetchSite(url, depth = 0, maxDepth = 1, collected = {}) {
     if (contentType.includes("text/html")) {
       const parser = new DOMParser();
       const doc = parser.parseFromString(collected[url].content, "text/html");
+      const assets = [...doc.querySelectorAll("img[src],audio[src],script[src],link[rel='stylesheet'][href]")];
 
-      const assets = [...doc.querySelectorAll("img[src],script[src],link[href]")];
       for (const el of assets) {
         const attr = el.getAttribute("src") || el.getAttribute("href");
         if (!attr) continue;
@@ -56,24 +79,7 @@ async function fetchSite(url, depth = 0, maxDepth = 1, collected = {}) {
   return collected;
 }
 
-async function fetchAsset(url, collected) {
-  if (collected[url]) return;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return;
-    const blob = await res.blob();
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const basePath = new URL(url).pathname.slice(1) || "asset";
-      collected[url] = { content: reader.result.split(",")[1], path: basePath, binary: true };
-      log(`📦 Recurso: ${basePath}`);
-    };
-    reader.readAsDataURL(blob);
-  } catch (err) {
-    log(`⚠️ Falha ao baixar ${url}`);
-  }
-}
-
+// Função para enviar arquivos para GitHub
 async function uploadToGitHub(repo, branch, token, files) {
   const api = `https://api.github.com/repos/${repo}`;
   const headers = {
@@ -111,6 +117,7 @@ async function uploadToGitHub(repo, branch, token, files) {
   log(`🌐 Ative o GitHub Pages em Settings → Pages → Branch: ${branch}`);
 }
 
+// Botão de clonagem
 document.getElementById("cloneBtn").onclick = async () => {
   const siteUrl = document.getElementById("siteUrl").value.trim();
   const repo = document.getElementById("repo").value.trim();
@@ -123,7 +130,7 @@ document.getElementById("cloneBtn").onclick = async () => {
   }
 
   log("🔍 Iniciando clonagem...");
-  const files = await fetchSite(siteUrl, 0, 0); // apenas a homepage
+  const files = await fetchSite(siteUrl, 0, 0); // apenas homepage
 
   log("📤 Enviando para o GitHub...");
   await uploadToGitHub(repo, branch, token, files);
