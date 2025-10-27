@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clonador Avançado de Sites para GitHub</title>
+<title>Clonador Otimizado de Sites para GitHub</title>
 <style>
 body { font-family: sans-serif; margin: 20px; }
 input, button { margin: 5px 0; width: 100%; padding: 8px; }
@@ -13,7 +13,7 @@ a { color: blue; cursor: pointer; text-decoration: underline; }
 </head>
 <body>
 
-<h2>Clonador Avançado de Sites</h2>
+<h2>Clonador Otimizado de Sites</h2>
 
 <label>URL do site:</label>
 <input id="siteUrl" placeholder="https://example.com">
@@ -36,7 +36,6 @@ a { color: blue; cursor: pointer; text-decoration: underline; }
 <textarea id="log" readonly></textarea>
 
 <script>
-// ----------------- LOG -----------------
 const logBox = document.getElementById("log");
 function log(msg) {
   console.log(msg);
@@ -44,7 +43,7 @@ function log(msg) {
   logBox.scrollTop = logBox.scrollHeight;
 }
 
-// ----------------- TUTORIAL TOKEN -----------------
+// Tutorial de token
 document.getElementById("tutorialLink").onclick = (e) => {
   e.preventDefault();
   alert(`
@@ -64,28 +63,31 @@ document.getElementById("tutorialLink").onclick = (e) => {
 `);
 };
 
-// ----------------- FETCH COM PROXY -----------------
-async function fetchWithProxy(url) {
+// ---------------- FETCH COM CACHE ----------------
+const cache = {};
+
+async function fetchWithCache(url) {
+  if (cache[url]) return cache[url];
   const proxy = "https://api.allorigins.win/get?url=";
   const res = await fetch(proxy + encodeURIComponent(url));
   if (!res.ok) throw new Error("Falha no proxy");
   const data = await res.json();
+  cache[url] = data.contents;
   return data.contents;
 }
 
-// ----------------- FUNÇÃO RECURSIVA DE FETCH -----------------
+// ---------------- FETCH RECURSIVO OTIMIZADO ----------------
 async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDomain = null) {
   if (depth > maxDepth || collected[url]) return collected;
   try {
     log(`📥 Baixando: ${url}`);
-    const html = await fetchWithProxy(url);
+    const html = await fetchWithCache(url);
     const path = new URL(url).pathname === "/" ? "index.html" : new URL(url).pathname.slice(1);
     collected[url] = { content: html, path: path || "index.html" };
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
 
-    // Determina domínio base
     if (!originDomain) originDomain = new URL(url).origin;
 
     // ----------------- BAIXA ASSETS -----------------
@@ -97,7 +99,7 @@ async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDom
       if (!collected[abs]) {
         try {
           log(`📦 Baixando asset: ${abs}`);
-          const blobData = await fetchWithProxy(abs);
+          const blobData = await fetchWithCache(abs);
           collected[abs] = { content: btoa(unescape(encodeURIComponent(blobData))), path: new URL(abs).pathname.slice(1) || "asset", binary: false };
         } catch {
           log(`⚠️ Falha ao baixar asset: ${abs}`);
@@ -123,7 +125,7 @@ async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDom
   return collected;
 }
 
-// ----------------- UPLOAD PARA GITHUB -----------------
+// ---------------- UPLOAD PARA GITHUB ----------------
 async function uploadToGitHub(repo, branch, token, files) {
   const api = `https://api.github.com/repos/${repo}`;
   const headers = {
@@ -160,7 +162,7 @@ async function uploadToGitHub(repo, branch, token, files) {
   log(`🌐 Ative o GitHub Pages em Settings → Pages → Branch: ${branch}`);
 }
 
-// ----------------- BOTÃO CLONAR -----------------
+// ---------------- BOTÃO CLONAR ----------------
 document.getElementById("cloneBtn").onclick = async () => {
   const siteUrl = document.getElementById("siteUrl").value.trim();
   const repo = document.getElementById("repo").value.trim();
@@ -173,7 +175,7 @@ document.getElementById("cloneBtn").onclick = async () => {
     return;
   }
 
-  log("🔍 Iniciando clonagem avançada...");
+  log("🔍 Iniciando clonagem otimizada...");
   const files = await fetchSite(siteUrl, depth);
 
   log("📤 Enviando para o GitHub...");
@@ -182,5 +184,6 @@ document.getElementById("cloneBtn").onclick = async () => {
   log("🎉 Pronto! Ative o GitHub Pages para visualizar o site clonado.");
 };
 </script>
+
 </body>
 </html>
