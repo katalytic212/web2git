@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clonador de Sites para GitHub</title>
+<title>Clonador Avançado de Sites para GitHub</title>
 <style>
-  body { font-family: sans-serif; margin: 20px; }
-  input, button { margin: 5px 0; width: 100%; padding: 8px; }
-  textarea { width: 100%; height: 300px; margin-top: 10px; }
-  a { color: blue; cursor: pointer; text-decoration: underline; }
+body { font-family: sans-serif; margin: 20px; }
+input, button { margin: 5px 0; width: 100%; padding: 8px; }
+textarea { width: 100%; height: 300px; margin-top: 10px; }
+a { color: blue; cursor: pointer; text-decoration: underline; }
 </style>
 </head>
 <body>
-<h2>Clonador de Sites para GitHub Pages</h2>
+
+<h2>Clonador Avançado de Sites</h2>
 
 <label>URL do site:</label>
 <input id="siteUrl" placeholder="https://example.com">
@@ -25,6 +26,9 @@
 
 <label>Branch (default: gh-pages)</label>
 <input id="branch" placeholder="gh-pages">
+
+<label>Profundidade de páginas internas (ex: 2)</label>
+<input id="depth" type="number" value="1">
 
 <button id="tutorialLink">Como gerar token</button>
 <button id="cloneBtn">Clonar e enviar</button>
@@ -69,21 +73,23 @@ async function fetchWithProxy(url) {
   return data.contents;
 }
 
-// ----------------- FETCH SITE E ASSETS -----------------
-async function fetchSite(url, collected = {}) {
-  if (collected[url]) return collected;
-
+// ----------------- FUNÇÃO RECURSIVA DE FETCH -----------------
+async function fetchSite(url, maxDepth = 1, depth = 0, collected = {}, originDomain = null) {
+  if (depth > maxDepth || collected[url]) return collected;
   try {
     log(`📥 Baixando: ${url}`);
     const html = await fetchWithProxy(url);
     const path = new URL(url).pathname === "/" ? "index.html" : new URL(url).pathname.slice(1);
     collected[url] = { content: html, path: path || "index.html" };
 
-    // Parse HTML e coletar assets
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, "text/html");
-    const assets = [...doc.querySelectorAll("img[src],audio[src],script[src],link[rel='stylesheet'][href]")];
 
+    // Determina domínio base
+    if (!originDomain) originDomain = new URL(url).origin;
+
+    // ----------------- BAIXA ASSETS -----------------
+    const assets = [...doc.querySelectorAll("img[src],audio[src],script[src],link[rel='stylesheet'][href]")];
     for (const el of assets) {
       const attr = el.getAttribute("src") || el.getAttribute("href");
       if (!attr) continue;
@@ -98,6 +104,18 @@ async function fetchSite(url, collected = {}) {
         }
       }
     }
+
+    // ----------------- SEGUIR LINKS INTERNOS -----------------
+    const links = [...doc.querySelectorAll("a[href]")];
+    for (const link of links) {
+      let href = link.getAttribute("href");
+      if (!href) continue;
+      const abs = new URL(href, url).href;
+      if (abs.startsWith(originDomain) && !collected[abs]) {
+        await fetchSite(abs, maxDepth, depth + 1, collected, originDomain);
+      }
+    }
+
   } catch (err) {
     log(`❌ Erro ao baixar ${url}: ${err.message}`);
   }
@@ -148,14 +166,15 @@ document.getElementById("cloneBtn").onclick = async () => {
   const repo = document.getElementById("repo").value.trim();
   const token = document.getElementById("token").value.trim();
   const branch = document.getElementById("branch").value.trim() || "gh-pages";
+  const depth = parseInt(document.getElementById("depth").value) || 1;
 
   if (!siteUrl || !repo || !token) {
     alert("Preencha todos os campos!");
     return;
   }
 
-  log("🔍 Iniciando clonagem...");
-  const files = await fetchSite(siteUrl);
+  log("🔍 Iniciando clonagem avançada...");
+  const files = await fetchSite(siteUrl, depth);
 
   log("📤 Enviando para o GitHub...");
   await uploadToGitHub(repo, branch, token, files);
