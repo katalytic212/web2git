@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web2Git - Clonador Interativo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Web2Git - Clonador Interativo</h1>
+
+<div class="form-group">
+  <label>URL do site:</label>
+  <input id="siteUrl" placeholder="https://example.com">
+</div>
+
+<div class="form-group">
+  <label>Repositório GitHub (usuario/repo):</label>
+  <input id="repo" placeholder="usuario/repositorio">
+</div>
+
+<div class="form-group">
+  <label>Token (Fine-Grained)</label>
+  <input id="token" type="password" placeholder="github_pat_...">
+</div>
+
+<div class="form-group">
+  <label>Branch (default: gh-pages)</label>
+  <input id="branch" placeholder="gh-pages">
+</div>
+
+<div class="form-group">
+  <label>Profundidade de páginas (1-10)</label>
+  <input id="depth" type="number" value="1" min="1" max="10">
+</div>
+
+<button id="cloneBtn">Clonar e enviar</button>
+
+<h2>Logs</h2>
+<textarea id="log" readonly></textarea>
+
+<script src="script.js"></script>
+</body>
+</html>
