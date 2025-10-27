@@ -51,23 +51,62 @@
             return;
         }
 
-        fetch("https://nome-do-app.herokuapp.com/clone", {
+        // Clonar o site usando fetch (simulação)
+        fetch(url)
+            .then(response => response.text())
+            .then(data => {
+                // Usando a API do GitHub para criar o repositório e enviar os dados
+                createRepoAndUpload(githubToken, repoName, data);
+            })
+            .catch(error => {
+                document.getElementById("message").textContent = "Erro ao acessar o site.";
+                document.getElementById("message").className = "message error";
+            });
+    });
+
+    function createRepoAndUpload(token, repoName, htmlContent) {
+        const apiUrl = "https://api.github.com/user/repos";
+        
+        fetch(apiUrl, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": `token ${token}`
             },
-            body: JSON.stringify({ url, repo_name: repoName, github_token: githubToken })
+            body: JSON.stringify({
+                name: repoName,
+                description: "Repositório criado automaticamente para armazenar o site",
+                private: false
+            })
         })
         .then(response => response.json())
-        .then(data => {
-            document.getElementById("message").textContent = data.message;
+        .then(repo => {
+            // Criar um arquivo HTML no novo repositório
+            const fileApiUrl = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/contents/index.html`;
+            const base64Content = btoa(htmlContent);  // Codifica o HTML em Base64
+
+            return fetch(fileApiUrl, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `token ${token}`
+                },
+                body: JSON.stringify({
+                    message: "Adicionando index.html com o conteúdo do site",
+                    content: base64Content
+                })
+            });
+        })
+        .then(response => response.json())
+        .then(() => {
+            document.getElementById("message").textContent = "Site clonado e enviado para o GitHub com sucesso!";
             document.getElementById("message").className = "message success";
         })
         .catch(error => {
-            document.getElementById("message").textContent = "Erro ao comunicar com o servidor.";
+            document.getElementById("message").textContent = "Erro ao criar o repositório ou enviar o arquivo.";
             document.getElementById("message").className = "message error";
         });
-    });
+    }
 </script>
 
 </body>
