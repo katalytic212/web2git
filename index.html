@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clone de Site para GitHub</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { width: 80%; margin: 50px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { text-align: center; }
+        input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+        button { background-color: #4CAF50; color: white; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+        .message { padding: 20px; background-color: #f4f4f4; border-radius: 5px; }
+        .success { background-color: #dff0d8; }
+        .error { background-color: #f2dede; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Clone de Site para GitHub</h1>
+    
+    <form id="cloneForm">
+        <label for="url">URL do Site:</label>
+        <input type="text" id="url" name="url" placeholder="Ex: https://www.example.com" required>
+        
+        <label for="repo_name">Nome do Repositório:</label>
+        <input type="text" id="repo_name" name="repo_name" placeholder="Nome do repositório" required>
+        
+        <label for="github_token">Token do GitHub:</label>
+        <input type="text" id="github_token" name="github_token" placeholder="Seu token do GitHub" required>
+        
+        <button type="submit">Clonar e Enviar para o GitHub</button>
+    </form>
+
+    <div id="message" class="message"></div>
+</div>
+
+<script>
+    document.getElementById("cloneForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const url = document.getElementById("url").value;
+        const repoName = document.getElementById("repo_name").value;
+        const githubToken = document.getElementById("github_token").value;
+
+        if (!url || !repoName || !githubToken) {
+            document.getElementById("message").textContent = "Por favor, preencha todos os campos.";
+            document.getElementById("message").className = "message error";
+            return;
+        }
+
+        fetch("https://nome-do-app.herokuapp.com/clone", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ url, repo_name: repoName, github_token: githubToken })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("message").textContent = data.message;
+            document.getElementById("message").className = "message success";
+        })
+        .catch(error => {
+            document.getElementById("message").textContent = "Erro ao comunicar com o servidor.";
+            document.getElementById("message").className = "message error";
+        });
+    });
+</script>
+
+</body>
+</html>
